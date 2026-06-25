@@ -1,22 +1,19 @@
 package pe.edu.utp.tiendazapatillas.vista.components;
 
 import pe.edu.utp.tiendazapatillas.infraestructura.basedatos.ConexionBD;
-import pe.edu.utp.tiendazapatillas.repositorio.interfaces.IRepositorioZapatilla;
-import pe.edu.utp.tiendazapatillas.repositorio.memoria.InMemoryZapatillaDAO;
-import pe.edu.utp.tiendazapatillas.repositorio.mysql.MySQLZapatillaDAO;
-import pe.edu.utp.tiendazapatillas.servicio.fachada.ProcesadorVentaFachada;
-import pe.edu.utp.tiendazapatillas.servicio.notificaciones.ServicioInventario;
-import pe.edu.utp.tiendazapatillas.servicio.proxy.IAccesoZapatilla;
-import pe.edu.utp.tiendazapatillas.servicio.proxy.ZapatillaProxy;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 
+/**
+ * La ventana principal de la aplicación. Ahora es un componente de vista 'puro'
+ * que se configura desde el exterior (desde Main.java).
+ */
 public class VentanaPrincipalFrame extends JFrame {
 
-    private static final boolean USAR_MYSQL = false;
-    private JComboBox<String> cmbRoles;
-    private JPanel mainPanel;
+    private final JComboBox<String> cmbRoles;
+    private final JPanel mainPanel;
 
     public VentanaPrincipalFrame() {
         setTitle("Tienda de Zapatillas - Demostración de Patrones de Diseño");
@@ -25,7 +22,7 @@ public class VentanaPrincipalFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // 1. Barra de Herramientas Superior (Control de Rol y Singleton)
+        // 1. Barra de Herramientas Superior
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         cmbRoles = new JComboBox<>(new String[]{"ADMINISTRADOR", "CAJERO"});
@@ -39,44 +36,23 @@ public class VentanaPrincipalFrame extends JFrame {
         toolBar.add(lblSingleton);
         add(toolBar, BorderLayout.NORTH);
 
+        // Panel principal que será llenado desde Main
         mainPanel = new JPanel(new BorderLayout());
         add(mainPanel, BorderLayout.CENTER);
-
-        cmbRoles.addActionListener(e -> inicializarComponentesParaRol((String) cmbRoles.getSelectedItem()));
-        cmbRoles.setSelectedItem("ADMINISTRADOR");
     }
 
-    private void inicializarComponentesParaRol(String rolUsuario) {
+    public void setMainPanel(Component component) {
         mainPanel.removeAll();
-
-        IRepositorioZapatilla repositorio = USAR_MYSQL ? new MySQLZapatillaDAO() : new InMemoryZapatillaDAO();
-        ServicioInventario servicioInventario = new ServicioInventario();
-        IAccesoZapatilla servicioZapatillaProxy = new ZapatillaProxy(rolUsuario, repositorio);
-        ProcesadorVentaFachada fachada = new ProcesadorVentaFachada(rolUsuario, repositorio, servicioInventario);
-
-        PanelCatalogo panelCatalogo = new PanelCatalogo(rolUsuario, servicioZapatillaProxy);
-        PanelCaja panelCaja = new PanelCaja(panelCatalogo, fachada);
-
-        servicioInventario.registrarObservador(panelCatalogo);
-
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, panelCatalogo, panelCaja);
-        splitPane.setResizeWeight(0.55);
-
-        mainPanel.add(splitPane, BorderLayout.CENTER);
+        mainPanel.add(component, BorderLayout.CENTER);
         mainPanel.revalidate();
         mainPanel.repaint();
     }
 
-    public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public String getSelectedRole() {
+        return (String) cmbRoles.getSelectedItem();
+    }
 
-        SwingUtilities.invokeLater(() -> {
-            VentanaPrincipalFrame ventana = new VentanaPrincipalFrame();
-            ventana.setVisible(true);
-        });
+    public void addRoleChangeListener(ActionListener listener) {
+        cmbRoles.addActionListener(listener);
     }
 }
